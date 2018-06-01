@@ -450,7 +450,7 @@ class PKey(object):
 # readable from a one-line file of the format:
 #     <key-name> <base64-blob> [<comment>]
 # Of little value in the case of standard public keys
-# {ssh-rsa, ssh-dss, ssh-ecdsa, ssh-ed25519}, but should
+# {ssh-rsa, ssh-dss, ssh-ecdsa}, but should
 # provide rudimentary support for {*-cert.v01}
 class PublicBlob(object):
     """

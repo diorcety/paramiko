@@ -51,7 +51,6 @@ FINGERPRINTS = {
     'ssh-dss': b'\x44\x78\xf0\xb9\xa2\x3c\xc5\x18\x20\x09\xff\x75\x5b\xc1\xd2\x6c',
     'ssh-rsa': b'\x60\x73\x38\x44\xcb\x51\x86\x65\x7f\xde\xda\xa2\x2b\x5a\x57\xd5',
     'ecdsa-sha2-nistp256': b'\x25\x19\xeb\x55\xe6\xa1\x47\xff\x4f\x38\xd2\x75\x6f\xa5\xd5\x60',
-    'ssh-ed25519': b'\xb3\xd5"\xaa\xf9u^\xe8\xcd\x0e\xea\x02\xb9)\xa2\x80',
 }
 
 
@@ -248,9 +247,6 @@ class SSHClientTest(ClientTest):
         """
         self._test_connection(key_filename=_support('test_ecdsa_256.key'))
 
-    def test_client_ed25519(self):
-        self._test_connection(key_filename=_support('test_ed25519.key'))
-
     def test_3_multiple_key_files(self):
         """
         verify that SSHClient accepts and tries multiple key files.
@@ -299,7 +295,7 @@ class SSHClientTest(ClientTest):
         # They're similar except for which path is given; the expected auth and
         # server-side behavior is 100% identical.)
         # NOTE: only bothered whipping up one cert per overall class/family.
-        for type_ in ('rsa', 'dss', 'ecdsa_256', 'ed25519'):
+        for type_ in ('rsa', 'dss', 'ecdsa_256'):
             cert_name = 'test_{}.key-cert.pub'.format(type_)
             cert_path = _support(os.path.join('cert_support', cert_name))
             self._test_connection(
@@ -314,7 +310,7 @@ class SSHClientTest(ClientTest):
         # about the server-side key object's public blob. Thus, we can prove
         # that a specific cert was found, along with regular authorization
         # succeeding proving that the overall flow works.
-        for type_ in ('rsa', 'dss', 'ecdsa_256', 'ed25519'):
+        for type_ in ('rsa', 'dss', 'ecdsa_256'):
             key_name = 'test_{}.key'.format(type_)
             key_path = _support(os.path.join('cert_support', key_name))
             self._test_connection(

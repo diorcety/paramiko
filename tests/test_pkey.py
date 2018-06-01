@@ -27,7 +27,7 @@ from binascii import hexlify
 from hashlib import md5
 import base64
 
-from paramiko import RSAKey, DSSKey, ECDSAKey, Ed25519Key, Message, util
+from paramiko import RSAKey, DSSKey, ECDSAKey, Message, util
 from paramiko.py3compat import StringIO, byte_chr, b, bytes, PY2
 
 from .util import _support
@@ -451,38 +451,6 @@ class KeyTest(unittest.TestCase):
         comparable = TEST_KEY_BYTESTR_2 if PY2 else TEST_KEY_BYTESTR_3
         self.assertEqual(str(key), comparable)
 
-    def test_ed25519(self):
-        key1 = Ed25519Key.from_private_key_file(_support('test_ed25519.key'))
-        key2 = Ed25519Key.from_private_key_file(
-            _support('test_ed25519_password.key'), b'abc123'
-        )
-        self.assertNotEqual(key1.asbytes(), key2.asbytes())
-
-    def test_ed25519_compare(self):
-        # verify that the private & public keys compare equal
-        key = Ed25519Key.from_private_key_file(_support('test_ed25519.key'))
-        self.assertEqual(key, key)
-        pub = Ed25519Key(data=key.asbytes())
-        self.assertTrue(key.can_sign())
-        self.assertTrue(not pub.can_sign())
-        self.assertEqual(key, pub)
-
-    def test_ed25519_nonbytes_password(self):
-        # https://github.com/paramiko/paramiko/issues/1039
-        key = Ed25519Key.from_private_key_file(
-            _support('test_ed25519_password.key'),
-            # NOTE: not a bytes. Amusingly, the test above for same key DOES
-            # explicitly cast to bytes...code smell!
-            'abc123',
-        )
-        # No exception -> it's good. Meh.
-
-    def test_ed25519_load_from_file_obj(self):
-        with open(_support('test_ed25519.key')) as pkey_fileobj:
-            key = Ed25519Key.from_private_key(pkey_fileobj)
-        self.assertEqual(key, key)
-        self.assertTrue(key.can_sign())
-
     def test_keyfile_is_actually_encrypted(self):
         # Read an existing encrypted private key
         file_ = _support('test_rsa_password.key')
@@ -498,37 +466,3 @@ class KeyTest(unittest.TestCase):
         finally:
             os.remove(newfile)
 
-    def test_certificates(self):
-        # NOTE: we also test 'live' use of cert auth for all key types in
-        # test_client.py; this and nearby cert tests are more about the gritty
-        # details.
-        # PKey.load_certificate
-        key_path = _support(os.path.join('cert_support', 'test_rsa.key'))
-        key = RSAKey.from_private_key_file(key_path)
-        self.assertTrue(key.public_blob is None)
-        cert_path = _support(
-            os.path.join('cert_support', 'test_rsa.key-cert.pub')
-        )
-        key.load_certificate(cert_path)
-        self.assertTrue(key.public_blob is not None)
-        self.assertEqual(key.public_blob.key_type, 'ssh-rsa-cert-v01@openssh.com')
-        self.assertEqual(key.public_blob.comment, 'test_rsa.key.pub')
-        # Delve into blob contents, for test purposes
-        msg = Message(key.public_blob.key_blob)
-        self.assertEqual(msg.get_text(), 'ssh-rsa-cert-v01@openssh.com')
-        nonce = msg.get_string()
-        e = msg.get_mpint()
-        n = msg.get_mpint()
-        self.assertEqual(e, key.public_numbers.e)
-        self.assertEqual(n, key.public_numbers.n)
-        # Serial number
-        self.assertEqual(msg.get_int64(), 1234)
-
-        # Prevented from loading certificate that doesn't match
-        key_path = _support(os.path.join('cert_support', 'test_ed25519.key'))
-        key1 = Ed25519Key.from_private_key_file(key_path)
-        self.assertRaises(
-            ValueError,
-            key1.load_certificate,
-            _support('test_rsa.key-cert.pub'),
-        )
